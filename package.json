@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "prebuild": "node scripts/download-logos.js || true",
     "build": "vite build",
     "preview": "vite preview",
     "download-logos": "node scripts/download-logos.js"

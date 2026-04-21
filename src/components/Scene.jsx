@@ -63,7 +63,19 @@ const Scene = forwardRef(function Scene({ selectedBuilding, onSelect, isEditMode
   useEffect(() => {
     camera.position.copy(HELI_POS)
     camera.quaternion.setFromEuler(new THREE.Euler(HELI_PITCH, HELI_YAW, 0, 'YXZ'))
-    camera.fov = 75; camera.updateProjectionMatrix()
+    // Responsive FOV — wider on narrow/portrait screens so the whole scene fits
+    const setResponsiveFov = () => {
+      const aspect = window.innerWidth / window.innerHeight
+      camera.fov = aspect < 1 ? 90 : aspect < 1.3 ? 82 : 75
+      camera.updateProjectionMatrix()
+    }
+    setResponsiveFov()
+    window.addEventListener('resize', setResponsiveFov)
+    window.addEventListener('orientationchange', setResponsiveFov)
+    return () => {
+      window.removeEventListener('resize', setResponsiveFov)
+      window.removeEventListener('orientationchange', setResponsiveFov)
+    }
   }, [camera])
 
   // ── Mode transitions ───────────────────────────────────────────────────────
@@ -82,29 +94,54 @@ const Scene = forwardRef(function Scene({ selectedBuilding, onSelect, isEditMode
     }
   }, [cameraMode])
 
-  // ── Mouse drag (street mode only) ─────────────────────────────────────────
+  // ── Drag to look (mouse + touch, street mode only) ───────────────────────
   useEffect(() => {
-    const onDown = e => {
-      if (e.button !== 0 || mode.current !== 'street') return
+    const startDrag = (x, y) => {
+      if (mode.current !== 'street') return
       isDragging.current = true; hasDragged.current = false
-      lastMouse.current = { x: e.clientX, y: e.clientY }
+      lastMouse.current = { x, y }
     }
-    const onMove = e => {
+    const moveDrag = (x, y) => {
       if (!isDragging.current) return
-      const dx = e.clientX - lastMouse.current.x, dy = e.clientY - lastMouse.current.y
+      const dx = x - lastMouse.current.x, dy = y - lastMouse.current.y
       if (Math.abs(dx)>3||Math.abs(dy)>3) hasDragged.current = true
       goalYaw.current  -= dx * 0.003
       goalPitch.current = Math.max(-0.3, Math.min(0.45, goalPitch.current + dy*0.0025))
-      lastMouse.current = { x: e.clientX, y: e.clientY }
+      lastMouse.current = { x, y }
     }
-    const onUp = () => { isDragging.current = false; setTimeout(()=>{hasDragged.current=false},60) }
-    window.addEventListener('mousedown', onDown)
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup',   onUp)
+    const endDrag = () => { isDragging.current = false; setTimeout(()=>{hasDragged.current=false},60) }
+
+    const onMouseDown = e => { if (e.button === 0) startDrag(e.clientX, e.clientY) }
+    const onMouseMove = e => moveDrag(e.clientX, e.clientY)
+    const onMouseUp   = () => endDrag()
+
+    // Touch handlers — single-finger drag to look
+    const onTouchStart = e => {
+      if (e.touches.length !== 1) return
+      const t = e.touches[0]; startDrag(t.clientX, t.clientY)
+    }
+    const onTouchMove = e => {
+      if (e.touches.length !== 1 || !isDragging.current) return
+      e.preventDefault() // stop browser scroll / pull-to-refresh while looking
+      const t = e.touches[0]; moveDrag(t.clientX, t.clientY)
+    }
+    const onTouchEnd = () => endDrag()
+
+    window.addEventListener('mousedown', onMouseDown)
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup',   onMouseUp)
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove',  onTouchMove,  { passive: false })
+    window.addEventListener('touchend',   onTouchEnd)
+    window.addEventListener('touchcancel', onTouchEnd)
     return () => {
-      window.removeEventListener('mousedown', onDown)
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup',   onUp)
+      window.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup',   onMouseUp)
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove',  onTouchMove)
+      window.removeEventListener('touchend',   onTouchEnd)
+      window.removeEventListener('touchcancel', onTouchEnd)
     }
   }, [])
 

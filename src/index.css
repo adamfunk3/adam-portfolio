@@ -13,7 +13,19 @@ html, body, #root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  /* Mobile: stop browser hijacking finger gestures on the scene */
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
+
+/* Use full viewport including iOS Safari's dynamic URL bar */
+@supports (height: 100dvh) {
+  html, body, #root { height: 100dvh; }
+}
+
+/* Scroll is still allowed inside any popup/modal content */
+.modal-scroll, .modal-scroll * { touch-action: auto; }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

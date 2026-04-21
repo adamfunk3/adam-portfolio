@@ -80,12 +80,12 @@ export default function App() {
   return (
     <>
       {/* 3D Canvas — always rendering (visible behind intro blur) */}
-      <div style={{ position:'fixed', inset:0, zIndex:0 }}>
+      <div style={{ position:'fixed', inset:0, zIndex:0, touchAction:'none' }}>
         <Canvas
           shadows
           camera={{ position:[0,40,0], fov:75, near:0.1, far:500 }}
           gl={{ antialias:true }}
-          style={{ background:'#87ceeb' }}
+          style={{ background:'#87ceeb', touchAction:'none' }}
           onPointerMissed={handleClose}
         >
           <Scene
@@ -129,7 +129,7 @@ export default function App() {
                   }}>
                   <span style={{width:6,height:6,borderRadius:'50%',background:'#50E6FF',
                     animation:'pulse 2s ease-in-out infinite'}} />
-                  Drag to look · ▲▼ to walk · Click a door to explore
+                  Swipe to look · ▲▼ to walk · Tap a door to explore
                   {isEditMode && <span style={{color:'#ffd700',fontWeight:600,marginLeft:4}}>· Edit mode active</span>}
                 </motion.div>
               )}
