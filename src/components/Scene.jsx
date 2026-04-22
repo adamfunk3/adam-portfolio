@@ -44,7 +44,7 @@ const TREES = [
 const LAMPS = [[2.4,-9],[2.4,-3],[2.4,3],[2.4,9],[-2.4,-6],[-2.4,0],[-2.4,6],[-2.4,12]]
 
 const Scene = forwardRef(function Scene({ selectedBuilding, onSelect, isEditMode, onEdit, cameraMode, buildings = [] }, ref) {
-  const { camera } = useThree()
+  const { camera, gl } = useThree()
   const cameraYaw   = useRef(HELI_YAW)
   const cameraPitch = useRef(HELI_PITCH)
   const cameraPos   = useRef(HELI_POS.clone())
@@ -95,7 +95,11 @@ const Scene = forwardRef(function Scene({ selectedBuilding, onSelect, isEditMode
   }, [cameraMode])
 
   // ── Drag to look (mouse + touch, street mode only) ───────────────────────
+  // Scoped to the 3D canvas element so touches on UI overlays (modal, buttons)
+  // are NOT intercepted — this is what lets the mobile info popup scroll.
   useEffect(() => {
+    const el = gl.domElement
+
     const startDrag = (x, y) => {
       if (mode.current !== 'street') return
       isDragging.current = true; hasDragged.current = false
@@ -127,23 +131,24 @@ const Scene = forwardRef(function Scene({ selectedBuilding, onSelect, isEditMode
     }
     const onTouchEnd = () => endDrag()
 
-    window.addEventListener('mousedown', onMouseDown)
+    el.addEventListener('mousedown', onMouseDown)
+    // Mouse can leave the canvas mid-drag, so keep move/up on window for desktop
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup',   onMouseUp)
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
-    window.addEventListener('touchmove',  onTouchMove,  { passive: false })
-    window.addEventListener('touchend',   onTouchEnd)
-    window.addEventListener('touchcancel', onTouchEnd)
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove',  onTouchMove,  { passive: false })
+    el.addEventListener('touchend',   onTouchEnd)
+    el.addEventListener('touchcancel', onTouchEnd)
     return () => {
-      window.removeEventListener('mousedown', onMouseDown)
+      el.removeEventListener('mousedown', onMouseDown)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup',   onMouseUp)
-      window.removeEventListener('touchstart', onTouchStart)
-      window.removeEventListener('touchmove',  onTouchMove)
-      window.removeEventListener('touchend',   onTouchEnd)
-      window.removeEventListener('touchcancel', onTouchEnd)
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove',  onTouchMove)
+      el.removeEventListener('touchend',   onTouchEnd)
+      el.removeEventListener('touchcancel', onTouchEnd)
     }
-  }, [])
+  }, [gl])
 
   // ── Building selection — save position before, restore on close ───────────
   useEffect(() => {

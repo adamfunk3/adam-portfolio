@@ -98,7 +98,8 @@ export default function InfoModal({ building, onClose, isEditMode, onEdit }) {
             </div>
 
             {/* Scrollable body — minHeight:0 required so flex child can shrink below content height */}
-            <div style={{ overflowY:'auto', padding:'20px 28px 28px', flex:1, minHeight:0 }}>
+            {/* className="modal-scroll" re-enables touch-action for mobile scroll inside the modal */}
+            <div className="modal-scroll" style={{ overflowY:'auto', WebkitOverflowScrolling:'touch', padding:'20px 28px 28px', flex:1, minHeight:0 }}>
               {/* Italicized blurb at top */}
               {building.blurb && (
                 <motion.div
